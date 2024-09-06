@@ -74,8 +74,9 @@ for desc, usd, cad in ng_pairs:
                 logger.info(f"Got Yahoo Finance crumb: {crumb!r}")
 
         r = sess.get(f'https://query1.finance.yahoo.com/v10/finance/quoteSummary/{symbol}?formatted=true&'
-                     'modules=summaryProfile,financialData,quoteType,recommendationTrend,earnings,equityPerformance,summaryDetail,defaultKeyStatistics,calendarEvents,esgScores,price,pageViews,financialsTemplate&'
-                     f'lang=en-US&region=US&crumb={urllib.parse.quote_plus(crumb)}')
+                     'modules=quoteType,summaryDetail,price'
+                     # More available: ',summaryProfile,financialData,recommendationTrend,earnings,equityPerformance,defaultKeyStatistics,calendarEvents,esgScores,pageViews,financialsTemplate'
+                     f'&lang=en-US&region=US&crumb={urllib.parse.quote_plus(crumb)}')
         r.raise_for_status()
 
         jsym = r.json()
