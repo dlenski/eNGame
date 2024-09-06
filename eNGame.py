@@ -40,7 +40,7 @@ sess.headers.update({
     #'Cache-Control': 'max-age=0',
 })
 
-def nav(r, *path, types_ok=(float, int), converter=None, expl='r'):
+def nav(r, *path, types_ok=(float, int), converter=None, ignore=(), expl='r'):
     for key in path:
         if not isinstance(r, dict):
             logging.warning(f'{expl} is unexpectedly of type {type(r)} rather than dict, returning None')
@@ -53,9 +53,11 @@ def nav(r, *path, types_ok=(float, int), converter=None, expl='r'):
     if not(isinstance(r, types_ok)):
         logging.warning(f'{expl} is unexpectedly of type {type(r)} rather than {" OR ".join(types_ok)}, returning None')
         return None
-    if converter:
-        return converter(r)
-    return r
+    elif r in ignore:
+        logging.warning(f'{expl} has value {r} which we ignore, returning None')
+        return None
+
+    return converter(r) if converter else r
 
 
 j = {}
@@ -101,8 +103,9 @@ for desc, usd, cad in ng_pairs:
 
         d = dict(
             symbol = symbol,
-            bid_size = nav(res, 'summaryDetail', 'bidSize', 'raw', expl=expl),
-            ask_size = nav(res, 'summaryDetail', 'askSize', 'raw', expl=expl),
+            # FIXME: why are bid/ask size always zero for TSX symbols? https://www.reddit.com/r/YAHOOFINANCE/comments/1fahk77
+            bid_size = nav(res, 'summaryDetail', 'bidSize', 'raw', expl=expl, ignore=(0,)),
+            ask_size = nav(res, 'summaryDetail', 'askSize', 'raw', expl=expl, ignore=(0,)),
             bid = nav(res, 'summaryDetail', 'bid', 'raw', expl=expl),
             ask = nav(res, 'summaryDetail', 'ask', 'raw', expl=expl),
             last_price = nav(res, 'price', 'regularMarketPrice', 'raw', expl=expl),
