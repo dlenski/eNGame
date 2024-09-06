@@ -7,8 +7,10 @@ from datetime import datetime, timezone, timedelta
 import time
 from sys import stdout
 import csv
+import os
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO').strip().upper())
+logging.getLogger('urllib3').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 ng_pairs = (
@@ -73,7 +75,7 @@ for desc, usd, cad in ng_pairs:
                 crumb = urllib.parse.unquote(m.group(1).encode().decode('unicode-escape'))
                 logger.info(f"Got Yahoo Finance crumb: {crumb!r}")
 
-        r = sess.get(f'https://query1.finance.yahoo.com/v10/finance/quoteSummary/{symbol}?formatted=true&'
+        r = sess.get(f'https://query1.finance.yahoo.com/v10/finance/quoteSummary/{symbol}?formatted=false&'
                      'modules=quoteType,summaryDetail,price'
                      # More available: ',summaryProfile,financialData,recommendationTrend,earnings,equityPerformance,defaultKeyStatistics,calendarEvents,esgScores,pageViews,financialsTemplate'
                      f'&lang=en-US&region=US&crumb={urllib.parse.quote_plus(crumb)}')
@@ -105,13 +107,13 @@ for desc, usd, cad in ng_pairs:
         d = dict(
             symbol = symbol,
             # FIXME: why are bid/ask size always zero for TSX symbols? https://www.reddit.com/r/YAHOOFINANCE/comments/1fahk77
-            bid_size = nav(res, 'summaryDetail', 'bidSize', 'raw', expl=expl, ignore=(0,)),
-            ask_size = nav(res, 'summaryDetail', 'askSize', 'raw', expl=expl, ignore=(0,)),
-            bid = nav(res, 'summaryDetail', 'bid', 'raw', expl=expl),
-            ask = nav(res, 'summaryDetail', 'ask', 'raw', expl=expl),
-            last_price = nav(res, 'price', 'regularMarketPrice', 'raw', expl=expl),
-            change = nav(res, 'price', 'regularMarketChange', 'raw', expl=expl),
-            change_percent = nav(res, 'price', 'regularMarketChangePercent', 'raw', expl=expl),
+            bid_size = nav(res, 'summaryDetail', 'bidSize', expl=expl, ignore=(0,)),
+            ask_size = nav(res, 'summaryDetail', 'askSize', expl=expl, ignore=(0,)),
+            bid = nav(res, 'summaryDetail', 'bid', expl=expl),
+            ask = nav(res, 'summaryDetail', 'ask', expl=expl),
+            last_price = nav(res, 'price', 'regularMarketPrice', expl=expl),
+            change = nav(res, 'price', 'regularMarketChange', expl=expl),
+            change_percent = nav(res, 'price', 'regularMarketChangePercent', expl=expl),
             timestamp = nav(res, 'price', 'regularMarketTime', expl=expl) # isoformat, converter=lambda ts: datetime.fromtimestamp(ts, tz), expl=expl).isoformat(),
         )
 
