@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "eNGame"
+version = "0.1.0"
+description = ""
+authors = [ "Daniel Lenski <dlenski@gmail.com>" ]
+license = "GPLv3 or later"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "*"
+colored = "^2.0"
+
+[tool.poetry.scripts]
+engame = 'engame.__main__:main'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
