@@ -7,6 +7,7 @@ import time
 from sys import stdout
 import csv
 import os
+from itertools import count
 #from dataclasses import dataclass
 
 import math
@@ -19,7 +20,7 @@ from colored import Fore, Back, Style
 from .pairs import ng_pairs, bad_list
 from .yq import YFQuote
 
-logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO').strip().upper())
+logging.basicConfig(level=os.environ.get('LOGLEVEL', 'WARNING').strip().upper())
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('-v', '--verbose', action='count', default=0, help='Show long results with full calculations')
     p.add_argument('--max-lag', type=int, default=60, help='Maximum lag to accept (in seconds)')
+    p.add_argument('-L', '--limit', type=int, default=math.inf, help='Only show the best LIMIT results')
     p.add_argument('src_cur', type=str.upper, choices=('USD', 'CAD'), help='Source currency (USD or CAD)')
     p.add_argument('src_amount', type=float, help='Amount of source currency to convert')
     g = p.add_argument_group('Commissions', '''
@@ -75,10 +77,6 @@ def main():
 
     now = time.time()
 
-    print(f"Finding optimal securities to convert {Fore.red}{src_cur} {src_amount:,.02f}{Style.reset} to {Fore.green}{dst_cur}{Style.reset} using Norbert's Gambit.")
-    print(f'- Commission function for buying source-currency security:       {Fore.red}{args.src_commission}{Style.reset}')
-    print(f'- Commission function for selling destination-currency security: {Fore.green}{args.dst_commission}{Style.reset}')
-
     yfq = YFQuote()
     j = get_ng_data(src_cur, yfq)
     mmex = yfq.get_quote('USD/CAD mid-market rate', 'CAD=X', 'CAD')
@@ -86,86 +84,85 @@ def main():
     mm_lag = now - mmex.timestamp
     if mm_lag > args.max_lag:
         p.error(f'Lag in London mid-market exchange rate is too high ({mm_lag:.0f} sec)')
+
+    print(f"Finding optimal securities to convert {Fore.red}{src_cur} {src_amount:,.02f}{Style.reset} to {Fore.green}{dst_cur}{Style.reset} using Norbert's Gambit.")
+    print(f'- Commission function for buying {src_cur} security:  {Fore.red}{args.src_commission}{Style.reset}')
+    print(f'- Commission function for selling {dst_cur} security: {Fore.green}{args.dst_commission}{Style.reset}')
     print(f'\nLondon mid-market exchange rate for {Fore.red}{src_cur}{Style.reset} -> {Fore.green}{dst_cur}{Style.reset}'
           f' is {Fore.yellow}{mm_rate:,.04f}{Style.reset}'
           f' ({Style.bold}{mm_lag:.0f} sec lag{Style.reset})\n')
 
-    # Build table of results
+    # Calculate results and stash them in the dict of quotes
     for desc, jd in j.items():
-        src_symbol = jd.src.symbol
-        dst_symbol = jd.dst.symbol
-        src_ask = jd.src.ask
-        dst_bid = jd.dst.bid
+        for reduce in count():
+            # How many shares should we buy/sell?
+            shares = jd['shares'] = src_amount // jd.src.ask - reduce
+            src_amount_convert = src_amount_convert = shares * jd.src.ask
+            dst_amount = shares * jd.dst.bid
 
-        shares, src_leftover = divmod(src_amount, src_ask)
-        assert (shares := int(shares))
-        src_amount_convert = src_amount - src_leftover
-        dst_amount = shares * dst_bid
+            # Calculate commissions
+            commission_vars = dict(all_math_funcs, src_ask=jd.src.ask, dst_bid=jd.dst.bid, shares=shares, src_amount_convert=src_amount_convert, dst_amount=dst_amount)
+            src_commission = jd['src_commission'] = eval(args.src_commission, commission_vars)
+            dst_commission = jd['dst_commission'] = eval(args.dst_commission, commission_vars)
 
-        commission_vars = dict(all_math_funcs, src_ask=src_ask, dst_bid=dst_bid, shares=shares, src_amount_convert=src_amount_convert, dst_amount=dst_amount)
-        jd['src_commission'] = src_commission = eval(args.src_commission, commission_vars)
-        jd['dst_commission'] = dst_commission = eval(args.dst_commission, commission_vars)
+            # Net amounts outgoing and incoming after commissions
+            src_amount_net = jd['src_amount_net'] = src_amount_convert + src_commission
+            src_leftover = jd['src_leftover'] = src_amount - src_amount_net
+            dst_amount_net = jd['dst_amount_net'] = dst_amount - dst_commission
 
-        src_amount_net = src_amount_convert + src_commission
-        dst_amount_net = dst_amount - dst_commission
+            # Keep reducing by one share until we're below the starting amount after commission
+            if src_leftover >= 0.0:
+                break
 
+        # Stash results
         jd['effective_rate'] = dst_amount_net / src_amount_net
-        jd['theoretical_rate'] = dst_bid / src_ask
-        jd['src_lag'] = now - jd[src_cur].timestamp
-        jd['dst_lag'] = now - jd[dst_cur].timestamp
+        jd['theoretical_rate'] = jd.dst.bid / jd.src.ask
+        jd['src_lag'] = now - jd.src.timestamp
+        jd['dst_lag'] = now - jd.dst.timestamp
 
-    # Display results
+    lag_ok = [(desc, jd) for (desc, jd) in j.items() if jd['src_lag'] <= args.max_lag and jd['dst_lag'] <= args.max_lag]
+    lag_ok.sort(key=lambda x: x[1]['effective_rate'], reverse=True)
+    print(f'Got {len(j)} quote pairs, of which {len(lag_ok)} with lag of <= {args.max_lag} sec.')
+
+    # Display results ranked from best to worst
     print('Best options:\n')
-    for ii, (desc, jd) in enumerate(
-        sorted(((desc, jd) for (desc, jd) in j.items() if jd['src_lag'] <= args.max_lag and jd['dst_lag'] <= args.max_lag),
-               key=lambda x: x[1]['effective_rate'], reverse=True)
-    ):
+    for ii, (desc, jd) in enumerate(lag_ok):
+        if ii >= args.limit:
+            break
+
+        shares = jd['shares']
         src_commission = jd['src_commission']
         dst_commission = jd['dst_commission']
-        src_symbol = jd.src.symbol
-        dst_symbol = jd.src.symbol
-        src_ask = jd.src.ask
-        dst_bid = jd.dst.bid
+        src_amount_net = jd['src_amount_net']
+        src_leftover = jd['src_leftover']
+        dst_amount_net = jd['dst_amount_net']
+        effective_rate = jd['effective_rate']
+        theoretical_rate = jd['theoretical_rate']
         src_lag = jd['src_lag']
         dst_lag = jd['dst_lag']
-        theoretical_rate = jd['theoretical_rate']
-        effective_rate = jd['effective_rate']
-
-        shares, src_leftover = divmod(src_amount, src_ask)
-        assert (shares := int(shares))
-        src_amount_convert = src_amount - src_leftover
-        src_amount_net = src_amount_convert + src_commission
-        dst_amount = shares * dst_bid
-        dst_amount_net = dst_amount - dst_commission
 
         dst_amount_mm = src_amount_net * mm_rate
         loss_compared_to_mm = dst_amount_mm - dst_amount_net
 
         if args.verbose < 2:
-            print(f'{ii+1:-2d}. Buy {Style.bold}{shares}{Style.reset} x {Fore.red}{src_symbol}{Style.reset} at {Fore.red}{src_cur} {src_ask:,.03f}{Style.reset},'
-                  f' sell {Fore.green}{dst_symbol}{Style.reset} at {Fore.green}{dst_cur} {dst_bid:,.03f}{Style.reset}'
-                  f' ({Style.bold}{max(src_lag, dst_lag):.0f} sec lag{Style.reset})\n'
+            print(f'{ii+1:-2d}. Buy {Style.bold}{shares:.0f}{Style.reset} x {Fore.red}{jd.src.symbol}{Style.reset} at {Fore.red}{src_cur} {jd.src.ask:,.03f}{Style.reset} ({Style.bold}{src_lag:.0f} sec lag{Style.reset}),'
+                  f' sell {Fore.green}{jd.dst.symbol}{Style.reset} at {Fore.green}{dst_cur} {jd.dst.bid:,.03f}{Style.reset} ({Style.bold}{dst_lag:.0f} sec lag{Style.reset})\n'
                   f'    Effective rate of {Fore.yellow}{effective_rate:.04f}{Style.reset}\n'
-                  f'    Losing {Fore.green}{dst_cur} {loss_compared_to_mm:,.04f}{Style.reset} compared to London mid-market)')
+                  f'    Losing {Fore.green}{dst_cur} {loss_compared_to_mm:,.04f}{Style.reset} compared to London mid-market')
             if args.verbose > 0:
-                  print(f'    Net of commissions of {Fore.red}{src_cur} {src_commission}{Style.reset} (buy) and {Fore.green}{dst_cur} {dst_commission}{Style.reset} (sell)\n')
-        else:
-            if ii > 0: print('\n==========================\n')
-            print(f'Converting {src_cur} {src_amount:,.02f} to {dst_cur} using {desc} (CAD {jd["CAD"].symbol}, USD {jd["USD"].symbol})\n'
-                f'\n'
-                f'1. Buy {shares} shares of {src_symbol} in {src_cur} at ask of {src_ask:,.03f}, plus {src_commission:,.02f} commission\n'
-                f'   (= {shares} x {src_ask:,.03f} + {src_commission:,.02f} = {src_amount_net:,.02f})\n'
-                f'2. Sell {shares} shares of {dst_symbol} in {dst_cur} at bid of {dst_bid:,.03f}, less {dst_commission:,.02f} commission\n'
-                f'   (= {shares} x {dst_bid:,.03f} - {dst_commission:,.02f} = {dst_amount_net:,.02f})\n'
-                f'\n'
-                f'You start with:   {src_cur} {src_amount_net:,.02f}\n'
-                f'You end with:     {dst_cur} {dst_amount_net:,.02f}\n'
-                f'               (+ {src_cur} {src_leftover:,.02f} leftover)\n'
-                f'\n'
-                f'Your effective conversion rate: {effective_rate:.04f}\n'
-                f'Mid-market conversion rate:     {mm_rate:.04f}\n'
-                f'Compared to MM rate, you lose:  {dst_cur} {loss_compared_to_mm:,.04f}')
+                  print(f'    Net of commissions of {Fore.red}{src_cur} {src_commission}{Style.reset} (buy) and {Fore.green}{dst_cur} {dst_commission}{Style.reset} (sell)')
+            print()
 
+        else:
+            print(f'{ii+1:-2d}. Using {desc}:       [ {Style.bold}{max(src_lag, dst_lag):.0f} sec data lag{Style.reset} ]\n\n'
+                f'    a. Buy {Style.bold}{shares:.0f}{Style.reset} shares of {Fore.red}{jd.src.symbol}{Style.reset} at ask of {Fore.red}{src_cur} {jd.src.ask:,.03f}{Style.reset}, plus {Fore.red}{src_cur} {src_commission}{Style.reset} commission\n'
+                f'       (= {shares:.0f} x {jd.src.ask:,.03f} + {src_commission:,.02f} = {src_amount_net:,.02f})\n'
+                f'    b. Sell {Style.bold}{shares:.0f}{Style.reset} shares of {Fore.green}{jd.dst.symbol}{Style.reset} at bid of {Fore.green}{dst_cur} {jd.dst.bid:,.03f}{Style.reset}, less {Fore.green}{dst_cur} {dst_commission}{Style.reset} commission\n'
+                f'       (= {shares:.0f} x {jd.dst.bid:,.03f} - {dst_commission:,.02f} = {dst_amount_net:,.02f})\n\n'
+                f'    You end up with: {Fore.green}{dst_cur} {dst_amount_net:,.02f}{Style.reset} (+ leftover {Fore.red}{src_cur} {src_leftover:,.02f}{Style.reset})\n'
+                f'    Your effective conversion rate: {Fore.yellow}{effective_rate:.04f}{Style.reset}\n'
+                f'    Mid-market conversion rate:     {Fore.yellow}{mm_rate:.04f}{Style.reset}\n'
+                f'    Compared to MM rate, you lose:  {Fore.green}{dst_cur} {loss_compared_to_mm:,.04f}{Style.reset}\n')
 
 if __name__ == '__main__':
     main()
