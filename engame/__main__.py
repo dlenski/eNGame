@@ -57,7 +57,7 @@ def get_ng_data(src_cur: str, yfq: YFQuote):
 
 
 def main():
-    p = argparse.ArgumentParser()
+    p = argparse.ArgumentParser(description="A tool to help you pick the optimal securities to convert between US and Canadian currency using Norbert's Gambit, based on near-realtime quotes from Yahoo Finance.")
     p.add_argument('-v', '--verbose', action='count', default=0, help='Show long results with full calculations')
     p.add_argument('--max-lag', type=int, default=60, help='Maximum lag to accept (in seconds)')
     p.add_argument('-L', '--limit', type=int, default=math.inf, help='Only show the best LIMIT results')
@@ -83,7 +83,7 @@ def main():
     mm_rate = mmex.last_price ** (+1 if src_cur == 'USD' else -1)
     mm_lag = now - mmex.timestamp
     if mm_lag > args.max_lag:
-        p.error(f'Lag in London mid-market exchange rate is too high ({mm_lag:.0f} sec)')
+        p.error(f'Lag in London mid-market exchange rate is too high ({mm_lag:.0f} sec). Are US and Canadian markets open?')
 
     print(f"Finding optimal securities to convert {Fore.red}{src_cur} {src_amount:,.02f}{Style.reset} to {Fore.green}{dst_cur}{Style.reset} using Norbert's Gambit.")
     print(f'- Commission function for buying {src_cur} security:  {Fore.red}{args.src_commission}{Style.reset}')
@@ -121,8 +121,10 @@ def main():
         jd['dst_lag'] = now - jd.dst.timestamp
 
     lag_ok = [(desc, jd) for (desc, jd) in j.items() if jd['src_lag'] <= args.max_lag and jd['dst_lag'] <= args.max_lag]
+    if not lag_ok:
+        p.error(f'Out of {len(j)} interlisted stocks/ETFs, none have lag of <={args.max_lag} sec. Are US and Canadian markets open?')
     lag_ok.sort(key=lambda x: x[1]['effective_rate'], reverse=True)
-    print(f'Got {len(j)} quote pairs, of which {len(lag_ok)} with lag of <= {args.max_lag} sec.')
+    print(f'Out of {len(j)} pairs of interlisted stocks/ETFs, {len(lag_ok)} have lag of <={args.max_lag} sec.')
 
     # Display results ranked from best to worst
     print('Best options:\n')
@@ -150,7 +152,7 @@ def main():
                   f'    Effective rate of {Fore.yellow}{effective_rate:.04f}{Style.reset}\n'
                   f'    Losing {Fore.green}{dst_cur} {loss_compared_to_mm:,.04f}{Style.reset} compared to London mid-market')
             if args.verbose > 0:
-                  print(f'    Net of commissions of {Fore.red}{src_cur} {src_commission}{Style.reset} (buy) and {Fore.green}{dst_cur} {dst_commission}{Style.reset} (sell)')
+                  print(f'    Net of commissions of {Fore.red}{src_cur} {src_commission:,.02f}{Style.reset} (buy) and {Fore.green}{dst_cur} {dst_commission:,.02f}{Style.reset} (sell)')
             print()
 
         else:
