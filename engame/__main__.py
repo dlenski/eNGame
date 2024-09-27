@@ -1,6 +1,5 @@
 import argparse
 import logging
-import requests
 import urllib.parse
 import json
 from datetime import datetime, timezone, timedelta
@@ -13,6 +12,9 @@ import os
 import math
 from inspect import isfunction, isbuiltin
 all_math_funcs = {n: f for (n, f) in vars(math).items() if isfunction(f) or isbuiltin(f)}
+
+import requests
+from colored import Fore, Back, Style
 
 from .pairs import ng_pairs, bad_list
 from .yq import YFQuote
@@ -62,7 +64,7 @@ def main():
     g = p.add_argument_group('Commissions', '''
         These may be either fixed strings, or Python expressions using the variables `src_ask`, `dst_bid`, `shares`, `src_amount_convert`, and `dst_amount`,
         as well as any functions from `math` (e.g. `floor`) or builtins (e.g. `max`).''')
-    g.add_argument('-S', '--src-commission', type=str, default='6.95', help="Commission for purchasing source-currency security (default %(default)r)")
+    g.add_argument('-S', '--src-commission', type=str, default='6.95', help="Commission for buying source-currency security (default %(default)r)")
     g.add_argument('-D', '--dst-commission', type=str, default='6.95', help="Commission for selling destination-currency security (default %(default)r)")
 
     args = p.parse_args()
@@ -73,9 +75,9 @@ def main():
 
     now = time.time()
 
-    print(f"Finding optimal securities to convert {src_cur} {src_amount:,.02f} to {dst_cur} using Norbert's Gambit.")
-    print(f'- Commission function for purchasing source-currency security:   {args.src_commission}')
-    print(f'- Commission function for selling destination-currency security: {args.dst_commission}')
+    print(f"Finding optimal securities to convert {Fore.red}{src_cur} {src_amount:,.02f}{Style.reset} to {Fore.green}{dst_cur}{Style.reset} using Norbert's Gambit.")
+    print(f'- Commission function for buying source-currency security:       {Fore.red}{args.src_commission}{Style.reset}')
+    print(f'- Commission function for selling destination-currency security: {Fore.green}{args.dst_commission}{Style.reset}')
 
     yfq = YFQuote()
     j = get_ng_data(src_cur, yfq)
@@ -84,7 +86,9 @@ def main():
     mm_lag = now - mmex.timestamp
     if mm_lag > args.max_lag:
         p.error(f'Lag in London mid-market exchange rate is too high ({mm_lag:.0f} sec)')
-    print(f'\nLondon mid-market exchange rate for {src_cur} -> {dst_cur} is {mm_rate:,.04f} (LAG: {mm_lag:.0f} sec)\n')
+    print(f'\nLondon mid-market exchange rate for {Fore.red}{src_cur}{Style.reset} -> {Fore.green}{dst_cur}{Style.reset}'
+          f' is {Fore.yellow}{mm_rate:,.04f}{Style.reset}'
+          f' ({Style.bold}{mm_lag:.0f} sec lag{Style.reset})\n')
 
     # Build table of results
     for desc, jd in j.items():
@@ -138,11 +142,13 @@ def main():
         loss_compared_to_mm = dst_amount_mm - dst_amount_net
 
         if args.verbose < 2:
-            print(f'{ii+1:-2d}. Buy {shares} x {src_symbol} at {src_cur} {src_ask:,.03f}, sell {dst_symbol} at {dst_cur} {dst_bid:,.03f}\n'
-                  f'    Effective rate of {effective_rate:.04f}, losing {dst_cur} {loss_compared_to_mm:,.04f}')
+            print(f'{ii+1:-2d}. Buy {Style.bold}{shares}{Style.reset} x {Fore.red}{src_symbol}{Style.reset} at {Fore.red}{src_cur} {src_ask:,.03f}{Style.reset},'
+                  f' sell {Fore.green}{dst_symbol}{Style.reset} at {Fore.green}{dst_cur} {dst_bid:,.03f}{Style.reset}'
+                  f' ({Style.bold}{max(src_lag, dst_lag):.0f} sec lag{Style.reset})\n'
+                  f'    Effective rate of {Fore.yellow}{effective_rate:.04f}{Style.reset}\n'
+                  f'    Losing {Fore.green}{dst_cur} {loss_compared_to_mm:,.04f}{Style.reset} compared to London mid-market)')
             if args.verbose > 0:
-                  print(f'    Commissions: {src_cur} {src_commission} (buy) and {dst_cur} {dst_commission} (sell)\n'
-                        f'    LAG: {max(src_lag, dst_lag):.0f} sec')
+                  print(f'    Net of commissions of {Fore.red}{src_cur} {src_commission}{Style.reset} (buy) and {Fore.green}{dst_cur} {dst_commission}{Style.reset} (sell)\n')
         else:
             if ii > 0: print('\n==========================\n')
             print(f'Converting {src_cur} {src_amount:,.02f} to {dst_cur} using {desc} (CAD {jd["CAD"].symbol}, USD {jd["USD"].symbol})\n'
@@ -159,6 +165,7 @@ def main():
                 f'Your effective conversion rate: {effective_rate:.04f}\n'
                 f'Mid-market conversion rate:     {mm_rate:.04f}\n'
                 f'Compared to MM rate, you lose:  {dst_cur} {loss_compared_to_mm:,.04f}')
+
 
 if __name__ == '__main__':
     main()
