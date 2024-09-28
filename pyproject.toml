@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "eNGame"
-version = "0.1.0"
+version = "0.0.2"
 description = ""
 authors = [ "Daniel Lenski <dlenski@gmail.com>" ]
 license = "GPLv3 or later"
