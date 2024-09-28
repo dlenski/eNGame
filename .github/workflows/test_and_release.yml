@@ -78,7 +78,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/p/zxing
+      url: https://pypi.org/p/eNGame
     permissions:
       # IMPORTANT: this permission is mandatory for trusted publishing
      id-token: write
