@@ -9,13 +9,13 @@ based on near-realtime data obtained from Yahoo Finance.
 
 # Example
 
-My brokerage charges me commissions of US$15.00 + US$0.01/share to buy US$ securities,
-and a flat CA$8.00 to sell CA$ securities.
+My brokerage charges me commissions of US\$15.00 + US\$0.01/share to buy US\$ securities,
+and a flat CA\$8.00 to sell CA\$ securities.
 
-I want to convert US$50,000 to CA$. Right now, the mid-market exchange rate is about 1.3512 CAD/USD.
+I want to convert US\$50,000 to CA\$. Right now, the mid-market exchange rate is about 1.3512 CAD/USD.
 
 What are the 5 best
-[interlisted CA$/US$ stocks or ETFs](https://www.canadianmoneyforum.com/threads/dual-listed-etfs-tsx-nyse.135364/post-1972456)
+[interlisted CA\$/US\$ stocks or ETFs](https://www.canadianmoneyforum.com/threads/dual-listed-etfs-tsx-nyse.135364/post-1972456)
 to use to do this conversion right now?
 
 Engame can show you the best options. Note that the three best options right now would get you an effective exchange rate
