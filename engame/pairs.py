@@ -17,6 +17,7 @@ ng_pairs = (                              # US$ symbol    CA$ symbol
     ('Horizons S&P 500 ETF',              'HXS-U.TO',    'HXS.TO'),
     ('Horizons TSX60 ETF',                'HXT-U.TO',    'HXT.TO'),
     ('Horizons Global Dev Index ETF',     'HXDM-U.TO',   'HXDM.TO'),
+    ('Thompson Reuters',                  'TRI.TO',      'TRI'),
 )
 
 # IT IS NOT POSSIBLE TO USE THESE PAIRS FOR NORBERT'S GAMBIT
