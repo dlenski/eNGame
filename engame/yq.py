@@ -40,7 +40,7 @@ def nav(r, *path, types_ok=(float, int), converter=None, ignore=(), expl='r'):
         logger.warning(f'{expl} is unexpectedly of type {type(r)} rather than {" OR ".join(types_ok)}, returning None')
         return None
     elif r in ignore:
-        logger.warning(f'{expl} has value {r} which we ignore, returning None')
+        logger.debug(f'{expl} has value {r} which we ignore, returning None')
         return None
 
     return converter(r) if converter else r
