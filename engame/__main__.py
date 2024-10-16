@@ -46,13 +46,13 @@ class QuotePair(dict):
 def get_ng_data(src_cur: str, yfq: YFQuote):
     global ng_pairs
     j = {}
-    for desc, usd, cad in ng_pairs:
-        assert usd not in bad_list
-        assert cad not in bad_list
-        for currency, symbol in (('USD', usd), ('CAD', cad)):
-            j[desc] = QuotePair(src_cur=src_cur,
-                                USD=yfq.get_quote(desc, usd, 'USD'),
-                                CAD=yfq.get_quote(desc, cad, 'CAD'))
+    for p in ng_pairs:
+        assert p.usd not in bad_list
+        assert p.cad not in bad_list
+        for currency, symbol in (('USD', p.usd), ('CAD', p.cad)):
+            j[p.desc] = QuotePair(src_cur=src_cur,
+                                  USD=yfq.get_quote(p.desc, p.usd, 'USD'),
+                                  CAD=yfq.get_quote(p.desc, p.cad, 'CAD'))
     return j
 
 
