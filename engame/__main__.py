@@ -46,13 +46,20 @@ class QuotePair(dict):
 def get_ng_data(src_cur: str, yfq: YFQuote):
     global ng_pairs
     j = {}
+    dst_cur = 'CAD' if src_cur == 'USD' else 'USD'
     for p in ng_pairs:
         assert p.usd not in bad_list
         assert p.cad not in bad_list
         for currency, symbol in (('USD', p.usd), ('CAD', p.cad)):
-            j[p.desc] = QuotePair(src_cur=src_cur,
-                                  USD=yfq.get_quote(p.desc, p.usd, 'USD'),
-                                  CAD=yfq.get_quote(p.desc, p.cad, 'CAD'))
+            qp = QuotePair(src_cur=src_cur,
+                           USD=yfq.get_quote(p.desc, p.usd, 'USD'),
+                           CAD=yfq.get_quote(p.desc, p.cad, 'CAD'))
+            if qp.src.ask is None:
+                logger.warn(f'Insufficient data for {p.desc} on the {src_cur} side, discarding')
+            elif qp.dst.bid is None:
+                logger.warn(f'Insufficient data for {p.desc} on the {dst_cur} side, discarding')
+            else:
+                j[p.desc] = qp
     return j
 
 

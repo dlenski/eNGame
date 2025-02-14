@@ -104,8 +104,8 @@ class YFQuote:
             # FIXME: why are bid/ask size always zero for TSX symbols? https://www.reddit.com/r/YAHOOFINANCE/comments/1fahk77
             bid_size = nav(res, 'summaryDetail', 'bidSize', expl=expl, ignore=(0,)),
             ask_size = nav(res, 'summaryDetail', 'askSize', expl=expl, ignore=(0,)),
-            bid = nav(res, 'summaryDetail', 'bid', expl=expl),
-            ask = nav(res, 'summaryDetail', 'ask', expl=expl),
+            bid = nav(res, 'summaryDetail', 'bid', expl=expl, ignore=(0.0,)),
+            ask = nav(res, 'summaryDetail', 'ask', expl=expl, ignore=(0.0,)),
             low = nav(res, 'price', 'regularMarketDayLow', expl=expl),
             high = nav(res, 'price', 'regularMarketDayHigh', expl=expl),
             last_price = nav(res, 'price', 'regularMarketPrice', expl=expl),
