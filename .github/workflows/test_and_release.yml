@@ -34,7 +34,8 @@ jobs:
       run: |
         poetry build
     - name: Store distribution packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
+      continue-on-error: true   # Not sure what else to do, given this change in v4 (https://github.com/actions/upload-artifact?tab=readme-ov-file#not-uploading-to-the-same-artifact)
       with:
         name: dist
         path: dist/
