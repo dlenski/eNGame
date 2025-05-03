@@ -37,7 +37,7 @@ def nav(r, *path, types_ok=(float, int), converter=None, ignore=(), expl='r'):
         r = r[key]
         expl += f'[{key!r}]'
     if not(isinstance(r, types_ok)):
-        logger.warning(f'{expl} is unexpectedly of type {type(r)} rather than {" OR ".join(types_ok)}, returning None')
+        logger.warning(f'{expl} is unexpectedly of type {type(r)} rather than {" OR ".join(str(t) for t in types_ok)}, returning None')
         return None
     elif r in ignore:
         logger.debug(f'{expl} has value {r} which we ignore, returning None')
@@ -91,7 +91,7 @@ class YFQuote:
             f'quoteSummary.result[0].summaryDetail.currency is {c!r} rather than expected {currency!r} in {jdesc}'
         # FIXME: USDCAD=X has a symbol of CAD=X here in the JSON...?
         assert (s := nav(res, 'quoteType', 'symbol', types_ok=str)) == symbol or (symbol == 'USDCAD=X' and s == 'CAD=X'), \
-        f'quoteSummary.result[0].quoteType.symbol is {s!r} rather than expected {symbol!r} in {jdesc}'
+            f'quoteSummary.result[0].quoteType.symbol is {s!r} rather than expected {symbol!r} in {jdesc}'
 
         tzoffset = nav(res, 'quoteType', 'gmtOffSetMilliseconds')
         tzname = nav(res, 'quoteType', 'timeZoneFullName', types_ok=str)

@@ -1,9 +1,11 @@
-# Pairs of interlisted USD/CAD stocks and ETFs for Norbert's Gambit
-#
-# Mostly taken from "Best stocks for Norbert's Gambit" thread:
-# https://www.canadianmoneyforum.com/threads/dual-listed-etfs-tsx-nyse.135364/post-1972456
+'''
+Pairs of interlisted USD/CAD stocks and ETFs for Norbert's Gambit
 
-# US CUSIP search: https://www.quantumonline.com/search.cfm?sopt=symbol&tickersymbol=AAA
+Mostly taken from "Best stocks for Norbert's Gambit" thread:
+https://www.canadianmoneyforum.com/threads/dual-listed-etfs-tsx-nyse.135364/post-1972456
+
+US CUSIP search: https://www.quantumonline.com/search.cfm?sopt=symbol&tickersymbol=AAA
+'''
 
 from collections import namedtuple
 p = namedtuple('SameCusipPair', ('desc', 'usd', 'cad', 'cusip'))
