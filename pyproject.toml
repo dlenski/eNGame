@@ -17,6 +17,7 @@ readme = "README.md"
 python = "^3.9"
 requests = "*"
 colored = "^2.0"
+websockets = "^15.0.1"
 
 [tool.poetry.scripts]
 engame = 'engame.__main__:main'
