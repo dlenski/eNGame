@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class YFQuoteResult:
     symbol: str
     currency: str
-    timestamp: int
+    timestamp: float
     tz: timezone
     bid_size: Optional[int]
     ask_size: Optional[int]
@@ -22,8 +22,10 @@ class YFQuoteResult:
     low: Optional[float]
     high: Optional[float]
     last_price: Optional[float]
+    last_size: Optional[int]
     change: Optional[float]
     change_percent: Optional[float]
+    market_state: Optional[str]
 
 
 def nav(r, *path, types_ok=(float, int), converter=None, ignore=(), expl='r'):
@@ -109,8 +111,10 @@ class YFQuote:
             low = nav(res, 'price', 'regularMarketDayLow', expl=expl),
             high = nav(res, 'price', 'regularMarketDayHigh', expl=expl),
             last_price = nav(res, 'price', 'regularMarketPrice', expl=expl),
+            last_size = None,   # Maybe Yahoo has it?? nav(res, 'price', 'lastMarket', expl=expl)
             change = nav(res, 'price', 'regularMarketChange', expl=expl),
             change_percent = nav(res, 'price', 'regularMarketChangePercent', expl=expl),
+            market_state = nav(res, 'price', 'marketState', types_ok=str, expl=expl),
         )
         logger.info(f'Got {jdesc}.')
         return q
