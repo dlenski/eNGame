@@ -18,7 +18,7 @@ import requests
 from colored import Fore, Back, Style
 
 from .pairs import ng_pairs, bad_list
-from .yq import YFQuote
+from .yq import YFQuote, nav, navs
 
 logging.basicConfig(level=os.environ.get('LOGLEVEL', 'WARNING').strip().upper())
 logging.getLogger('urllib3').setLevel(logging.WARNING)
@@ -91,6 +91,37 @@ def main():
     mm_lag = now - mmex.timestamp
     if mm_lag > args.max_lag:
         p.error(f'Lag in London mid-market exchange rate is too high ({mm_lag:.0f} sec). Are US and Canadian markets open?')
+
+    if False:
+        datestr = time.strftime("%m%%2F%d%%2F%Y", time.gmtime(now))
+        res = yfq.sess.get('https://usa.visa.com/support/consumer/travel-support/exchange-rate-calculator.html', verify=False) # get cookies
+        res.raise_for_status()
+        res = yfq.sess.get(f'https://usa.visa.com/cmsapi/fx/rates?amount=10000&fee=0&utcConvertedDate={datestr}&exchangedate={datestr}&fromCurr=CAD&toCurr=USD',
+                        headers={'referer': res.url, 'accept': 'application/json'}, verify=False)
+        res.raise_for_status()
+        vj = res.json()
+        assert navs(vj, 'originalValues', 'fromCurrency') == 'USD' and navs(vj, 'originalValues', 'toCurrency') == 'CAD'
+        if len(bm := vj.get('originalValues', {}).get('benchmarks', ())) != 1:
+            raise AssertionError(f'Visa exchange rate JSON does not contain expected originalValues.benchmarks[] of length 1')
+        bm = bm[0]
+        bmsys = navs(bm, 'benchmarkSystem')
+        bmrate = navs(bm, 'benchmarkFxRate', converter=float)
+        markup = navs(bm, 'markupWithoutAdditionalFee', converter=float)
+        bmasof = nav(bm, 'lastUpdatedBenchmarkRate', converter=datetime.fromtimestamp)
+        vrate = bmrate * (1.0 + markup)
+        print(f'Visa exchange rate: benchmark {bmrate} from {bmsys} as of {bmasof} (plus {markup * 100:.2f}% markup from Visa -> {vrate})')
+
+    if False:
+        datestr = date.today().isoformat()
+        res = yfq.sess.get('https://www.mastercard.com/global/en/personal/get-support/convert-currency.html') # get cookies
+        res.raise_for_status()
+        res = yfq.sess.get(f'https://www.mastercard.com/settlement/currencyrate/conversion-rate?fxDate={datestr}&transCurr=USD&crdhldBillCurr=CAD&bankFee=0&transAmt=10000',
+                        headers={'referer': res.url, 'accept': 'application/json'})
+        mcj = res.json()
+        assert navs(mcj, 'data', 'transCurr') == 'USD' and navs(mcj, 'data', 'crdhldBillCurr') == 'CAD' and navs(mcj, 'data', 'fxDate') == datestr
+        mcasof = navs(mcj, 'date', converter=datetime.fromisoformat)
+        mcrate = nav(mcj, 'data', 'conversionRate')
+        print(f'MasterCard exchange rate: {mcrate} as of {mcasof} (includes markup)')
 
     print(f"Finding optimal securities to convert {Fore.red}{src_cur} {src_amount:,.02f}{Style.reset} to {Fore.green}{dst_cur}{Style.reset} using Norbert's Gambit.")
     print(f'- Commission function for buying {src_cur} security:  {Fore.red}{args.src_commission}{Style.reset}')
