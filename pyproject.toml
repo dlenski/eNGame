@@ -18,6 +18,8 @@ python = "^3.9"
 requests = "*"
 colored = "^2.0"
 websockets = "^15.0.1"
+yliveticker = "^0.3.0"
+protobuf = "3.20"
 
 [tool.poetry.scripts]
 engame = 'engame.__main__:main'

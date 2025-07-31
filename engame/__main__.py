@@ -18,7 +18,7 @@ import requests
 from colored import Fore, Back, Style
 
 from .pairs import ng_pairs, bad_list
-from .yq import YFQuote
+from .yq import YFQuote, nav
 
 logging.basicConfig(level=os.environ.get('LOGLEVEL', 'WARNING').strip().upper())
 logging.getLogger('urllib3').setLevel(logging.WARNING)
@@ -91,6 +91,23 @@ def main():
     mm_lag = now - mmex.timestamp
     if mm_lag > args.max_lag:
         p.error(f'Lag in London mid-market exchange rate is too high ({mm_lag:.0f} sec). Are US and Canadian markets open?')
+
+    datestr = time.strftime("%m%%2F%d%%2F%Y", time.gmtime(now))
+    res = yfq.sess.get('https://www.visa.ca/support/consumer/travel-support/exchange-rate-calculator.html', verify=False) # get cookies
+    res.raise_for_status()
+    res = yfq.sess.get(f'https://www.visa.ca/cmsapi/fx/rates?amount=10000&fee=0&utcConvertedDate={datestr}&exchangedate={datestr}&fromCurr=CAD&toCurr=USD',
+                       headers={'referer': res.url, 'accept': 'application/json'}, verify=False)
+    res.raise_for_status()
+    vj = res.json()
+    assert nav(vj, 'originalValues', 'fromCurrency', types_ok=str) == 'USD' and nav(vj, 'originalValues', 'toCurrency', types_ok=str) == 'CAD'
+    if len(bm := vj.get('originalValues', {}).get('benchmarks', ())) != 1:
+        raise AssertionError(f'Visa exchange rate JSON does not contain expected originalValues.benchmarks[] of length 1')
+    bm = bm[0]
+    bmsys = nav(bm, 'benchmarkSystem', types_ok=str)
+    bmrate = nav(bm, 'benchmarkFxRate', types_ok=str, converter=float)
+    markup = nav(bm, 'markupWithoutAdditionalFee', types_ok=str, converter=float)
+    bmasof = nav(bm, 'lastUpdatedBenchmarkRate', converter=datetime.fromtimestamp)
+    print(f'Visa exchange rate: {bmrate} (from {bmsys} as of {bmasof}, plus {markup * 100:.2f}%)')
 
     print(f"Finding optimal securities to convert {Fore.red}{src_cur} {src_amount:,.02f}{Style.reset} to {Fore.green}{dst_cur}{Style.reset} using Norbert's Gambit.")
     print(f'- Commission function for buying {src_cur} security:  {Fore.red}{args.src_commission}{Style.reset}')

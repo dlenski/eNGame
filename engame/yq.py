@@ -30,12 +30,20 @@ class YFQuoteResult:
 
 def nav(r, *path, types_ok=(float, int), converter=None, ignore=(), expl='r'):
     for key in path:
-        if not isinstance(r, dict):
-            logger.warning(f'{expl} is unexpectedly of type {type(r)} rather than dict, returning None')
-            return None
-        elif key not in r:
-            logger.warning(f'{expl} unexpectedly lacks key {key!r}, returning None')
-            return None
+        if isinstance(key, int):
+            if not isinstance(r, list):
+                logger.warning(f'{expl} is unexpectedly of type {type(r)} rather than list, returning None')
+                return None
+            elif key >= len(r):
+                logger.warning(f'{expl} has length {len(r)} but index {key} requested, returning None')
+                return None
+        else:
+            if not isinstance(r, dict):
+                logger.warning(f'{expl} is unexpectedly of type {type(r)} rather than dict, returning None')
+                return None
+            elif key not in r:
+                logger.warning(f'{expl} unexpectedly lacks key {key!r}, returning None')
+                return None
         r = r[key]
         expl += f'[{key!r}]'
     if not(isinstance(r, types_ok)):
