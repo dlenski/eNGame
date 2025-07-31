@@ -80,7 +80,7 @@ def load_credentials(
 
     r = sess.get(f'{BASE_URL}/me', headers={'authorization': f'Bearer {access_token}'})
     if not r.ok:
-        r = sess.post(f'{BASE_URL}/token', {'refresh_token': refresh_token}, headers={'authorization': f'Bearer {access_token}'})
+        r = sess.post(f'{BASE_URL}/auth/refresh', {'refresh_token': refresh_token}, headers={'authorization': f'Bearer {access_token}'})
         if r.status_code == 401:
             raise NotImplementedError('New login needed because refresh_token has expired')
         elif not r.ok:

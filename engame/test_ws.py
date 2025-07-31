@@ -25,6 +25,18 @@ assert resp.ok, resp.content
 devid, atoken, rtoken, exp = resp.headers['x-ws-device-id'], resp.headers['x-access-token'], resp.headers['x-refresh-token'], resp.headers['x-access-token-expires']
 sess.headers['authorization'] = auth = 'Bearer ' + atoken
 
+# Fetch wealthsimple exchange rate:
+#curl 'https://my.wealthsimple.com/graphql' \
+#  -H 'authorization: Bearer '+jwt \
+#  -H 'content-type: application/json' \
+#  -H 'user-agent: '+ua \
+#  -H 'x-platform-os: web' \
+#  -H 'x-ws-api-version: 12' \
+#  -H 'x-ws-device-id: '+devid \
+#  -H 'x-ws-locale: en-CA' \
+#  -H 'x-ws-profile: trade' \
+#  --data-raw $'{"operationName":"FetchLatestExchangeRate","variables":{"baseCurrency":"USD","quoteCurrency":"CAD"},"query":"query FetchLatestExchangeRate($baseCurrency: ForexCurrency\u0021, $quoteCurrency: ForexCurrency\u0021) {\\n  latestRate(baseCurrency: $baseCurrency, quoteCurrency: $quoteCurrency) {\\n    ...LatestExchangeRate\\n    __typename\\n  }\\n}\\n\\nfragment LatestExchangeRate on ExchangeRate {\\n  mid\\n  bid\\n  ask\\n  __typename\\n}"}'
+
 # Fetch wealthsimple security IDs:
 #curl 'https://my.wealthsimple.com/graphql' \
 #  -H 'authorization: Bearer '+jwt
@@ -37,6 +49,7 @@ sess.headers['authorization'] = auth = 'Bearer ' + atoken
 #  -H 'x-ws-profile: trade' \
 #  --data-raw $'{"operationName":"FetchSecuritySearchResult","variables":{"query":"enbri"},"query":"query FetchSecuritySearchResult($query: String\u0021) {\\n  securitySearch(input: {query: $query}) {\\n    results {\\n      ...SecuritySearchResult\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n\\nfragment SecuritySearchResult on Security {\\n  id\\n  buyable\\n  status\\n  stock {\\n    symbol\\n    name\\n    primaryExchange\\n    __typename\\n  }\\n  features\\n  quoteV2 {\\n    securityId\\n    currency\\n    ... on EquityQuote {\\n      marketStatus\\n      __typename\\n    }\\n    __typename\\n  }\\n  __typename\\n}"}'
 
+# This one does too
 resp = sess.get('https://trade-service.wealthsimple.com/securities?query=hxs')
 import pprint
 pprint.pprint(resp.json())
@@ -78,6 +91,7 @@ with connect(
 
     for msg in ws:
         j = json.loads(msg)
+        print('*****', msg)
         jq = j['payload']['data']['securityQuoteUpdates']['quoteV2']
         sym = ws2sym[jq['securityId']]
         ts = nav(jq, 'quotedAsOf', types_ok=str, converter=datetime.fromisoformat)
