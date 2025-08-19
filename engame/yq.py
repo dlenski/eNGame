@@ -3,6 +3,7 @@ import logging
 from urllib.parse import quote_plus
 from typing import Optional
 from dataclasses import dataclass
+from functools import partial
 
 import requests
 
@@ -24,6 +25,7 @@ class YFQuoteResult:
     last_price: Optional[float]
     change: Optional[float]
     change_percent: Optional[float]
+    market_state: Optional[str]
 
 
 def nav(r, *path, types_ok=(float, int), converter=None, ignore=(), expl='r'):
@@ -44,6 +46,9 @@ def nav(r, *path, types_ok=(float, int), converter=None, ignore=(), expl='r'):
         return None
 
     return converter(r) if converter else r
+
+
+navs = partial(nav, types_ok=str)
 
 
 class YFQuote:
@@ -88,14 +93,14 @@ class YFQuote:
         res, = res
         expl = jdesc + ': quoteSummary.result[0]'
 
-        assert (c := nav(res, 'summaryDetail', 'currency', types_ok=str)) == currency, \
+        assert (c := navs(res, 'summaryDetail', 'currency')) == currency, \
             f'quoteSummary.result[0].summaryDetail.currency is {c!r} rather than expected {currency!r} in {jdesc}'
         # FIXME: USDCAD=X has a symbol of CAD=X here in the JSON...?
-        assert (s := nav(res, 'quoteType', 'symbol', types_ok=str)) == symbol or (symbol == 'USDCAD=X' and s == 'CAD=X'), \
+        assert (s := navs(res, 'quoteType', 'symbol')) == symbol or (symbol == 'USDCAD=X' and s == 'CAD=X'), \
             f'quoteSummary.result[0].quoteType.symbol is {s!r} rather than expected {symbol!r} in {jdesc}'
 
         tzoffset = nav(res, 'quoteType', 'gmtOffSetMilliseconds')
-        tzname = nav(res, 'quoteType', 'timeZoneFullName', types_ok=str)
+        tzname = navs(res, 'quoteType', 'timeZoneFullName')
         assert tzoffset is not None and tzname is not None
         tz = timezone(timedelta(seconds=tzoffset / 1000), tzname)
 
@@ -112,6 +117,7 @@ class YFQuote:
             last_price = nav(res, 'price', 'regularMarketPrice', expl=expl),
             change = nav(res, 'price', 'regularMarketChange', expl=expl),
             change_percent = nav(res, 'price', 'regularMarketChangePercent', expl=expl),
+            market_state = navs(res, 'price', 'marketState', expl=expl),
         )
         logger.info(f'Got {jdesc}.')
         return q
