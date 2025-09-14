@@ -28,13 +28,21 @@ ng_pairs = (                               # US$ symbol    CA$ symbol    CUSIP
 )
 
 # IT IS NOT POSSIBLE TO USE THESE PAIRS FOR NORBERT'S GAMBIT
-# because the USD/CAD symbols do not share the same CUSIPs.
-#
-# Taken from https://www.finiki.org/wiki/Norbert%27s_gambit#ETFs_with_different_CUSIPs
+# because the USD/CAD symbols do not share the same CUSIPs,
+# as explained in 
+# https://www.finiki.org/wiki/Norbert%27s_gambit#ETFs_with_different_CUSIPs
 
 bad_list = (
+    # Taken from https://www.finiki.org/w/index.php?title=Norbert%27s_gambit&oldid=25581
     'ZSP.U', 'ZSP',
     'XEF.U', 'XEF',
     'XUS.U', 'XUS',
     'XUU.U', 'XUU',
+    # Other ETFs that are commission-free on BMO SD (https://www.bmoinvestorline.com/selfDirected/pdfs/no_commission_fee_etfs_en.pdf), but which have different CUSIPs:
+    'ZLU.U', 'ZLU', # https://www.bmogam.com/ca-en/products/exchange-traded-fund/bmo-low-volatility-us-equity-etf-zlu, https://www.bmogam.com/ca-en/products/exchange-traded-fund/bmo-low-volatility-us-equity-etf-zlu
+    'ZDY.U', 'ZDY', # https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-us-dividend-etf-zdy, https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-us-dividend-etf-usd-units-zdy-u
+    'ZUQ.U', 'ZUQ', # https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-msci-usa-high-quality-index-etf-zuq, https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-msci-usa-high-quality-index-etf-usd-units-zuq-u
+    'ZWH.H', 'ZWH', # https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-us-high-dividend-covered-call-etf-zwh, https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-us-high-dividend-covered-call-etf-us-dollar-units-zwh-u
+    'XEC.U', 'XEC', # https://www.blackrock.com/ca/investors/en/products/251423/ishares-msci-emerging-markets-imi-index-etf, https://www.blackrock.com/ca/investors/en/products/310734/ishares-core-msci-emerging-markets-imi-index-etf
+    'XMU.U', 'XMU', # https://www.blackrock.com/ca/investors/en/products/310740/ishares-msci-min-vol-usa-index-etf, https://www.blackrock.com/ca/investors/en/products/239694/ishares-msci-usa-minimum-volatility-index-etf, 
 )
