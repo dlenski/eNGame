@@ -11,7 +11,8 @@ from collections import namedtuple
 p = namedtuple('SameCusipPair', ('desc', 'usd', 'cad', 'cusip'))
 
 ng_pairs = (                               # US$ symbol    CA$ symbol    CUSIP
-    p('Horizons U.S. Dollar Currency ETF', 'DLR-U.TO',    'DLR.TO',     '379948102'),
+
+    # For all these interlisted *stocks*, the US$ side is listed on NYSE or Nasdaq, while the CA$ side is listed in Toronto:
     p('TD (Canadian bank)',                'TD',          'TD.TO',      '891160509'),
     p('BMO (Canadian bank)',               'BMO',         'BMO.TO',     '063671101'),
     p('CIBC (Canadian bank)',              'CM',          'CM.TO',      '136069101'),
@@ -21,15 +22,18 @@ ng_pairs = (                               # US$ symbol    CA$ symbol    CUSIP
     p('Enbridge (oil/energy)',             'ENB',         'ENB.TO',     '29250N105'),
     p('Suncor (oil/energy)',               'SU',          'SU.TO',      '867224107'),
     p('MFC (insurance/investment)',        'MFC',         'MFC.TO',     '56501R106'),
+    p('Thompson Reuters',                  'TRI',         'TRI.TO',     '884903709'),
+
+    # For all these interelisted *ETFs*, both US$ and CA$ sides are listed in Toronto:
+    p('Horizons U.S. Dollar Currency ETF', 'DLR-U.TO',    'DLR.TO',     '379948102'),
     p('Horizons S&P 500 ETF',              'HXS-U.TO',    'HXS.TO',     '37964P100'),
     p('Horizons TSX60 ETF',                'HXT-U.TO',    'HXT.TO',     '37963M108'),
     p('Horizons Global Dev Index ETF',     'HXDM-U.TO',   'HXDM.TO',    '37963V108'),
-    p('Thompson Reuters',                  'TRI',         'TRI.TO',     '884903709'),
 )
 
 # IT IS NOT POSSIBLE TO USE THESE PAIRS FOR NORBERT'S GAMBIT
 # because the USD/CAD symbols do not share the same CUSIPs,
-# as explained in 
+# as explained in
 # https://www.finiki.org/wiki/Norbert%27s_gambit#ETFs_with_different_CUSIPs
 
 bad_list = (
@@ -44,5 +48,5 @@ bad_list = (
     'ZUQ.U', 'ZUQ', # https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-msci-usa-high-quality-index-etf-zuq, https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-msci-usa-high-quality-index-etf-usd-units-zuq-u
     'ZWH.H', 'ZWH', # https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-us-high-dividend-covered-call-etf-zwh, https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-us-high-dividend-covered-call-etf-us-dollar-units-zwh-u
     'XEC.U', 'XEC', # https://www.blackrock.com/ca/investors/en/products/251423/ishares-msci-emerging-markets-imi-index-etf, https://www.blackrock.com/ca/investors/en/products/310734/ishares-core-msci-emerging-markets-imi-index-etf
-    'XMU.U', 'XMU', # https://www.blackrock.com/ca/investors/en/products/310740/ishares-msci-min-vol-usa-index-etf, https://www.blackrock.com/ca/investors/en/products/239694/ishares-msci-usa-minimum-volatility-index-etf, 
+    'XMU.U', 'XMU', # https://www.blackrock.com/ca/investors/en/products/310740/ishares-msci-min-vol-usa-index-etf, https://www.blackrock.com/ca/investors/en/products/239694/ishares-msci-usa-minimum-volatility-index-etf,
 )
