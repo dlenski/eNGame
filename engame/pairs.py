@@ -49,4 +49,6 @@ bad_list = (
     'ZWH.H', 'ZWH', # https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-us-high-dividend-covered-call-etf-zwh, https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-us-high-dividend-covered-call-etf-us-dollar-units-zwh-u
     'XEC.U', 'XEC', # https://www.blackrock.com/ca/investors/en/products/251423/ishares-msci-emerging-markets-imi-index-etf, https://www.blackrock.com/ca/investors/en/products/310734/ishares-core-msci-emerging-markets-imi-index-etf
     'XMU.U', 'XMU', # https://www.blackrock.com/ca/investors/en/products/310740/ishares-msci-min-vol-usa-index-etf, https://www.blackrock.com/ca/investors/en/products/239694/ishares-msci-usa-minimum-volatility-index-etf,
+    'ZMI.U', 'ZMI', # https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-monthly-income-etf-zmi/, https://www.bmogam.com/ca-en/products/exchange-traded-fund/bmo-monthly-income-etf-usd-units-zmi-u/
+    'ZJK.U', 'ZJK', # https://www.bmogam.com/ca-en/products/exchange-traded-fund/bmo-high-yield-us-corporate-bond-index-etf-zjk/, https://www.bmogam.com/ca-en/products/exchange-traded-fund/bmo-high-yield-us-corporate-bond-index-etf-usd-units-zjk-u/
 )
