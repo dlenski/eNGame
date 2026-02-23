@@ -19,32 +19,42 @@ sess.headers.update({
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 })
 
-email, password, otp = sys.argv[1:4]
-
-sess_uuid = uuid.uuid1()
 devid = random.getrandbits(256).to_bytes(32).hex()
-resp = sess.post(
-    'https://api.production.wealthsimple.com/v1/oauth/v2/token',
-    headers={'X-Wealthsimple-Client': '@wealthsimple/wealthsimple',
-             'X-Ws-Profile': 'undefined',
-             'X-Ws-Session-Id': str(sess_uuid),
-             'X-Ws-Device-Id': devid,                              # "Real" device ID doesn't seem necessary
-             'X-Wealthsimple-Otp': otp + ';remember=true',
-    },
-    json={
-        "grant_type": "password",
-        "username": email,
-        "password": password,
-        "skip_provision": True,
-        "otp_claim": None,
-        "scope": "invest.read invest.write trade.read trade.write tax.read tax.write",
-        "client_id": "4da53ac2b03225bed1550eba8e4611e086c7b905a3855e6ed12ea08c246758fa",  # FIXED?
-    }
-)
-assert resp.ok, resp.content
-j = resp.json()
-assert j['token_type'] == 'Bearer'
-atoken, rtoken, exp = j['access_token'], j['refresh_token'], j['created_at'] + j['expires_in']
+if len(sys.argv) == 4:
+    email, password, otp = sys.argv[1:4]
+
+    sess_uuid = uuid.uuid1()
+    resp = sess.post(
+        'https://api.production.wealthsimple.com/v1/oauth/v2/token',
+        headers={'X-Wealthsimple-Client': '@wealthsimple/wealthsimple',
+                 'X-Ws-Profile': 'undefined',
+                 'X-Ws-Session-Id': str(sess_uuid),
+                 'X-Ws-Device-Id': devid,                              # "Real" device ID doesn't seem necessary
+                 'X-Wealthsimple-Otp': otp + ';remember=true',
+        },
+        json={
+            "grant_type": "password",
+            "username": email,
+            "password": password,
+            "skip_provision": True,
+            "otp_claim": None,
+            "scope": "invest.read invest.write trade.read trade.write tax.read tax.write",
+            "client_id": "4da53ac2b03225bed1550eba8e4611e086c7b905a3855e6ed12ea08c246758fa",  # FIXED?
+        }
+    )
+    assert resp.ok, resp.content
+    j = resp.json()
+    assert j['token_type'] == 'Bearer'
+    atoken, rtoken, exp = j['access_token'], j['refresh_token'], j['created_at'] + j['expires_in']
+    print(f"Got access token: {atoken} (expiring {datetime.fromtimestamp(exp)})")
+
+elif len(sys.argv) == 2:
+    atoken = sys.argv[1]
+
+else:
+    print(f"usage: {sys.argv[0]} EMAIL PASSWORD OTP")
+    print(f"       {sys.argv[0]} ACCESS-TOKEN")
+    raise SystemExit(1)
 
 sess.headers.update(sess_info := {
     "authorization": 'Bearer ' + atoken,
@@ -70,18 +80,22 @@ with connect(
 
     ws2sym = {}
     for p in pairs.ng_pairs:
-        ws2sym[p.wssecid] = p.cad
-        sub = {
-            "id": p.wssecid.removeprefix('sec-s-'),  # Reuse WealthSimple security ID as query ID
-            "type": "subscribe",
-            "payload": {
-                "variables": {"id": p.wssecid},
-                "extensions": {},
-                "operationName": "QuoteV2BySecurityIdStream",
-                "query": "subscription QuoteV2BySecurityIdStream($id: ID!, $currency: Currency) {\n  securityQuoteUpdates(id: $id) {\n    id\n    quoteV2(currency: $currency) {\n      ...StreamedSecurityQuoteV2\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment StreamedSecurityQuoteV2 on UnifiedQuote {\n  __typename\n  securityId\n  ask\n  bid\n  currency\n  price\n  sessionPrice\n  quotedAsOf\n  ... on EquityQuote {\n    marketStatus\n    askSize\n    bidSize\n    close\n    high\n    last\n    lastSize\n    low\n    open\n    mid\n    volume\n    __typename\n  }\n  ... on OptionQuote {\n    marketStatus\n    askSize\n    bidSize\n    close\n    high\n    last\n    lastSize\n    low\n    open\n    mid\n    volume\n    breakEven\n    inTheMoney\n    liquidityStatus\n    openInterest\n    underlyingSpot\n    __typename\n  }\n}"
+        for (si, sym) in ((p.wssecid_cad, p.cad), (p.wssecid_usd, p.usd)):
+            if si is None or sym is None:
+                continue
+
+            ws2sym[si] = sym
+            sub = {
+                "id": si.removeprefix('sec-s-'),  # Reuse WealthSimple security ID as query ID
+                "type": "subscribe",
+                "payload": {
+                    "variables": {"id": si},
+                    "extensions": {},
+                    "operationName": "QuoteV2BySecurityIdStream",
+                    "query": "subscription QuoteV2BySecurityIdStream($id: ID!, $currency: Currency) {\n  securityQuoteUpdates(id: $id) {\n    id\n    quoteV2(currency: $currency) {\n      ...StreamedSecurityQuoteV2\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment StreamedSecurityQuoteV2 on UnifiedQuote {\n  __typename\n  securityId\n  ask\n  bid\n  currency\n  price\n  sessionPrice\n  quotedAsOf\n  ... on EquityQuote {\n    marketStatus\n    askSize\n    bidSize\n    close\n    high\n    last\n    lastSize\n    low\n    open\n    mid\n    volume\n    __typename\n  }\n  ... on OptionQuote {\n    marketStatus\n    askSize\n    bidSize\n    close\n    high\n    last\n    lastSize\n    low\n    open\n    mid\n    volume\n    breakEven\n    inTheMoney\n    liquidityStatus\n    openInterest\n    underlyingSpot\n    __typename\n  }\n}"
+                }
             }
-        }
-        ws.send(json.dumps(sub))
+            ws.send(json.dumps(sub))
 
     for msg in ws:
         j = json.loads(msg)

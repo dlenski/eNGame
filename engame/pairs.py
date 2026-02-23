@@ -8,29 +8,36 @@ US CUSIP search: https://www.quantumonline.com/search.cfm?sopt=symbol&tickersymb
 '''
 
 from collections import namedtuple
-p = namedtuple('SameCusipPair', ('desc', 'cusip', 'usd', 'cad', 'wssecid'))
+SameCusipPair = namedtuple('SameCusipPair', ('desc', 'cusip', 'usd', 'cad', 'wssecid_usd', 'wssecid_cad'))
+SAME = WITH_U = None
+p = lambda desc, cusip, usd, cad, wssecid_usd, wssecid_cad: SameCusipPair(
+    desc, cusip,
+    cad + '-U.TO' if usd is WITH_U else usd,
+    (usd if cad is SAME else cad) + '.TO',
+    ('sec-s-' + wssecid_usd) if wssecid_usd is not None else None,
+    'sec-s-' + wssecid_cad)
 
 ng_pairs = (
-    #                                                      |---- Yahoo Finance ----|    |------------- WealthSimple ------------|
-    #                                        CUSIP         US$ symbol     CA$ symbol    CA$ security ID
+    #                                                      |--- Yahoo Finance ---|    |------------------------------ WealthSimple ----------------------------|
+    #                                        CUSIP         US$ symbol   CA$ symbol    US$ security ID                       CA$ security ID
 
     # For all these interlisted *stocks*, the US$ side is listed on NYSE or Nasdaq, while the CA$ side is listed in Toronto:
-    p('TD (Canadian bank)',                  '891160509',  'TD',          'TD.TO',      'sec-s-ea5e995e98774e3d998aa5dae06cf237'),
-    p('BMO (Canadian bank)',                 '063671101',  'BMO',         'BMO.TO',     'sec-s-d670c0c7745743f8a0f469b2f02444fc'),
-    p('CIBC (Canadian bank)',                '136069101',  'CM',          'CM.TO',      'sec-s-b898f6623a2c42649f9e9b53532b073c'),
-    p('ScotiaBank (Canadian bank)',          '064149107',  'BNS',         'BNS.TO',     'sec-s-cac48e23f5b84b4787b97628581ce59f'),
-    p('RBC (Canadian bank)',                 '780087102',  'RY',          'RY.TO',      'sec-s-3305aeb61f3a4b8797140439b028689b'),
-    p('Canadian National Railway',           '136375102',  'CNI',         'CNR.TO',     'sec-s-37f80b493095405189c7ea131adfd8ce'),
-    p('Enbridge (oil/energy)',               '29250N105',  'ENB',         'ENB.TO',     'sec-s-5405e20fa09946d29c768e0d41a4195d'),
-    p('Suncor (oil/energy)',                 '867224107',  'SU',          'SU.TO',      'sec-s-e90effe2699b47acbd69e96ffd0fea97'),
-    p('MFC (insurance/investment)',          '56501R106',  'MFC',         'MFC.TO',     'sec-s-82d7214a0efa4d338bb8307838f8f0aa'),
-    p('Thompson Reuters',                    '884903709',  'TRI',         'TRI.TO',     'sec-s-8e618c90909b4908b75997d4a497d07a'),
+    p('TD (Canadian bank)',                  '891160509',  'TD',        SAME,         '41b756b014454655a0365699984eeeab',   'ea5e995e98774e3d998aa5dae06cf237'),
+    p('BMO (Canadian bank)',                 '063671101',  'BMO',       SAME,         '86557912ccea4345a788fcb964011bf3',   'd670c0c7745743f8a0f469b2f02444fc'),
+    p('CIBC (Canadian bank)',                '136069101',  'CM',        SAME,         None,                                 'b898f6623a2c42649f9e9b53532b073c'),
+    p('ScotiaBank (Canadian bank)',          '064149107',  'BNS',       SAME,         'be8e0d081aeb48b3847f4b24316a749d',   'cac48e23f5b84b4787b97628581ce59f'),
+    p('RBC (Canadian bank)',                 '780087102',  'RY',        SAME,         '6501705bb1614b47ad5e72105d47a41b',   '3305aeb61f3a4b8797140439b028689b'),
+    p('Canadian National Railway',           '136375102',  'CNI',       'CNR',        '1c3b2af163aa4e2fb19a573fa7d5134e',   '37f80b493095405189c7ea131adfd8ce'),
+    p('Enbridge (oil/energy)',               '29250N105',  'ENB',       SAME,         '92ff02d9a03b4bc69c0f2c58ed0155fe',   '5405e20fa09946d29c768e0d41a4195d'),
+    p('Suncor (oil/energy)',                 '867224107',  'SU',        SAME,         '845cd37ec20648769043de645d1e3d2e',   'e90effe2699b47acbd69e96ffd0fea97'),
+    p('MFC (insurance/investment)',          '56501R106',  'MFC',       SAME,         None,                                 '82d7214a0efa4d338bb8307838f8f0aa'),
+    p('Thompson Reuters',                    '884903709',  'TRI',       SAME,         None,                                 '8e618c90909b4908b75997d4a497d07a'),
 
-    # For all these interelisted *ETFs*, both US$ and CA$ sides are listed in Toronto:
-    p('Horizons U.S. Dollar Currency ETF',   '379948102',  'DLR-U.TO',    'DLR.TO',     'sec-s-4c836ded25404e71862ac52ff5219506'),
-    p('Horizons S&P 500 ETF',                '37964P100',  'HXS-U.TO',    'HXS.TO',     'sec-s-27165f620fe14413bd2ee518716fa53f'),
-    p('Horizons TSX60 ETF',                  '37963M108',  'HXT-U.TO',    'HXT.TO',     'sec-s-12d0b80be5384550baf4b6a9ab21b7a2'),
-    p('Horizons Global Dev Index ETF',       '37963V108',  'HXDM-U.TO',   'HXDM.TO',    'sec-s-bc584288e77b4d4994cbc9bffa0a8373'),
+    # For all these interlisted *ETFs*, both US$ and CA$ sides are listed in Toronto:
+    p('Horizons U.S. Dollar Currency ETF',   '379948102',  WITH_U,      'DLR',        '6f10b675a88649bd8dcd13040d1e8594',   '4c836ded25404e71862ac52ff5219506'),
+    p('Horizons S&P 500 ETF',                '37964P100',  WITH_U,      'HXS',        None,                                 '27165f620fe14413bd2ee518716fa53f'),
+    p('Horizons TSX60 ETF',                  '37963M108',  WITH_U,      'HXT',        None,                                 '12d0b80be5384550baf4b6a9ab21b7a2'),
+    p('Horizons Global Dev Index ETF',       '37963V108',  WITH_U,      'HXDM',       None,                                 'bc584288e77b4d4994cbc9bffa0a8373'),
 )
 
 # IT IS NOT POSSIBLE TO USE THESE PAIRS FOR NORBERT'S GAMBIT
