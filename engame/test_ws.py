@@ -54,6 +54,7 @@ elif len(sys.argv) == 2:
 else:
     print(f"usage: {sys.argv[0]} EMAIL PASSWORD OTP")
     print(f"       {sys.argv[0]} ACCESS-TOKEN")
+    print( "       [Grab '_oauth2_access_v2' cookie from Wealthsimple.com, extract 'access_token']")
     raise SystemExit(1)
 
 sess.headers.update(sess_info := {
