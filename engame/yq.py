@@ -16,6 +16,7 @@ class YFQuoteResult:
     currency: str
     timestamp: int
     tz: timezone
+    volume: Optional[int]
     bid_size: Optional[int]
     ask_size: Optional[int]
     bid: Optional[float]
@@ -118,6 +119,7 @@ class YFQuote:
             change = nav(res, 'price', 'regularMarketChange', expl=expl),
             change_percent = nav(res, 'price', 'regularMarketChangePercent', expl=expl),
             market_state = navs(res, 'price', 'marketState', expl=expl),
+            volume = nav(res, 'summaryDetail', 'volume', expl=expl, ignore=(0,)),
         )
         logger.info(f'Got {jdesc}.')
         return q
