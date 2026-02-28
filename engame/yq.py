@@ -117,11 +117,12 @@ class YFQuote:
             low = nav(res, 'price', 'regularMarketDayLow', expl=expl),
             high = nav(res, 'price', 'regularMarketDayHigh', expl=expl),
             last_price = nav(res, 'price', 'regularMarketPrice', expl=expl),
-            last_size = None,   # Maybe Yahoo has it?? nav(res, 'price', 'lastMarket', expl=expl)
+            last_size = None,   # Yahoo doesn't seem to have this anywhere
             change = nav(res, 'price', 'regularMarketChange', expl=expl),
             change_percent = nav(res, 'price', 'regularMarketChangePercent', expl=expl),
             market_state = navs(res, 'price', 'marketState', expl=expl),
             volume = nav(res, 'summaryDetail', 'volume', expl=expl, ignore=(0,)),
+            # next_dividend_date = nav(res, 'calendarEvents', 'dividendDate'), # converter=lambda ts: datetime.fromtimestamp(ts, timezone.utc).date(), expl=expl))
         )
         logger.info(f'Got {jdesc}.')
         return q

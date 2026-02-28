@@ -9,75 +9,35 @@ from websockets.sync.client import connect
 
 from . import pairs
 from .yq import YFQuoteResult, nav, navs
+from . import ws_auth
 
 #import logging
 #logging.basicConfig(level=logging.DEBUG)
 
-sess = requests.session()
-sess.headers.update({
-    'User-Agent': (ua := 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'),
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-})
+sess = ws_auth._new_ws_session()
+u = ws_auth.authenticate(sess=sess)
 
-devid = random.getrandbits(256).to_bytes(32).hex()
-if len(sys.argv) == 4:
-    email, password, otp = sys.argv[1:4]
-
-    sess_uuid = uuid.uuid1()
-    resp = sess.post(
-        'https://api.production.wealthsimple.com/v1/oauth/v2/token',
-        headers={'X-Wealthsimple-Client': '@wealthsimple/wealthsimple',
-                 'X-Ws-Profile': 'undefined',
-                 'X-Ws-Session-Id': str(sess_uuid),
-                 'X-Ws-Device-Id': devid,                              # "Real" device ID doesn't seem necessary
-                 'X-Wealthsimple-Otp': otp + ';remember=true',
-        },
-        json={
-            "grant_type": "password",
-            "username": email,
-            "password": password,
-            "skip_provision": True,
-            "otp_claim": None,
-            "scope": "invest.read invest.write trade.read trade.write tax.read tax.write",
-            "client_id": "4da53ac2b03225bed1550eba8e4611e086c7b905a3855e6ed12ea08c246758fa",  # FIXED?
-        }
-    )
-    assert resp.ok, resp.content
-    j = resp.json()
-    assert j['token_type'] == 'Bearer'
-    atoken, rtoken, exp = j['access_token'], j['refresh_token'], j['created_at'] + j['expires_in']
-    print(f"Got access token: {atoken} (expiring {datetime.fromtimestamp(exp)})")
-
-elif len(sys.argv) == 2:
-    atoken = sys.argv[1]
-
-else:
-    print(f"usage: {sys.argv[0]} EMAIL PASSWORD OTP")
-    print(f"       {sys.argv[0]} ACCESS-TOKEN")
-    print( "       [Grab '_oauth2_access_v2' cookie from Wealthsimple.com, extract 'access_token']")
-    raise SystemExit(1)
-
-sess.headers.update(sess_info := {
-    "authorization": 'Bearer ' + atoken,
+sess_info = {
+    "authorization": 'Bearer ' + u.access_token,
     "x-ws-api-version": '12',
     "x-ws-locale": "en-CA",
     "x-ws-profile": "trade",
     "x-platform-os": "web",
-    "x-ws-device-id": devid,  # "Real" device ID doesn't seem necessary
-})
+    "x-ws-device-id": u.device_id,
+}
 
 with connect(
     'wss://realtime-api.wealthsimple.com/subscription',
     subprotocols=('graphql-transport-ws',),
     origin='https://my.wealthsimple.com',
-    user_agent_header=ua,
+    user_agent_header=ws_auth.USER_AGENT,
 ) as ws:
     init = {
         "type": "connection_init",
         "payload": sess_info,
     }
     ws.send(json.dumps(init))
-    print(ws.recv())
+    assert ws.recv() == '{"type":"connection_ack"}'
 
     ws2sym = {}
     for p in pairs.ng_pairs:
