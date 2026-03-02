@@ -4,6 +4,8 @@ import json
 import uuid
 import random
 from datetime import datetime
+import logging
+import os
 
 from websockets.sync.client import connect
 
@@ -11,8 +13,9 @@ from . import pairs
 from .yq import YFQuoteResult, nav, navs
 from . import ws_auth
 
-#import logging
-#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+level = os.environ.get('WS_AUTH_LOGLEVEL', 'INFO').strip().upper()
+ws_auth.logger.setLevel(level)
 
 sess = ws_auth._new_ws_session()
 u = ws_auth.authenticate(sess=sess)
