@@ -35,9 +35,9 @@ ng_pairs = (
 
     # For all these interlisted *ETFs*, both US$ and CA$ sides are listed in Toronto:
     p('Horizons U.S. Dollar Currency ETF',   '379948102',  WITH_U,      'DLR',        '6f10b675a88649bd8dcd13040d1e8594',   '4c836ded25404e71862ac52ff5219506'),
-    p('Horizons S&P 500 ETF',                '37964P100',  WITH_U,      'HXS',        None,                                 '27165f620fe14413bd2ee518716fa53f'),
-    p('Horizons TSX60 ETF',                  '37963M108',  WITH_U,      'HXT',        None,                                 '12d0b80be5384550baf4b6a9ab21b7a2'),
-    p('Horizons Global Dev Index ETF',       '37963V108',  WITH_U,      'HXDM',       None,                                 'bc584288e77b4d4994cbc9bffa0a8373'),
+    p('Horizons S&P 500 ETF',                '37964P100',  WITH_U,      'HXS',        '838493d8cc8048c2b98432706573383e',   '27165f620fe14413bd2ee518716fa53f'),
+    p('Horizons TSX60 ETF',                  '37963M108',  WITH_U,      'HXT',        '686c2589d9e74d4fb6964007e3cea24c',   '12d0b80be5384550baf4b6a9ab21b7a2'),
+    p('Horizons Global Dev Index ETF',       '37963V108',  WITH_U,      'HXDM',       '4f726c8ae3994eb9ae9c78f4759ef8fa',   'bc584288e77b4d4994cbc9bffa0a8373'),
 )
 
 # IT IS NOT POSSIBLE TO USE THESE PAIRS FOR NORBERT'S GAMBIT
