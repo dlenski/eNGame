@@ -1,6 +1,15 @@
 [project]
 name = "eNGame"
 description = "A tool to help you pick the optimal securities for Norbert's Gambit"
+version = "0.0.4"
+license = "GPLv3 or later"
+readme = "README.md"
+requires-python = ">=3.9"
+requires = [
+  "requests",
+  "colored>=2.0",
+  "websockets>=15.0.1",
+]
 
 [project.urls]
 Homepage = "https://github.com/dlenski/eNGame"
@@ -22,6 +31,9 @@ websockets = "^15.0.1"
 [tool.poetry.scripts]
 engame = 'engame.__main__:main'
 test-ws = 'engame.test_ws:main'
+
+[project.scripts]
+engame = "engame.__main__:main"
 
 [build-system]
 requires = ["poetry-core"]
